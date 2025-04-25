@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # %% [markdown]
@@ -24,7 +24,7 @@ import copy
 import os
 # os.environ["WANDB_API_KEY"] = "x" # TODO remove - BE CAREFUL DONT PUT ON GITHUB!!
 
-import numpy as np # TODO consider switching out for torch where poss
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -45,7 +45,7 @@ wandb.login()
 
 # %%
 MAX_TIMESTEPS = 2000 # [DONT CHANGE]
-SOURCE = 'mac' # mac, ncc, colab -> for personal id in wandb
+SOURCE_ID = 'mac' # mac, ncc, colab -> for personal id in wandb
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE
@@ -87,18 +87,18 @@ def train_on_environment(actor, env, grad_step_class, replay_buffer, max_timeste
         ep_reward += reward
 
         if max_timesteps == MAX_TIMESTEPS: # could we be in dreamer for this?
-            # reward design TODO why is this suitable?
+            # reward shaping
             if reward == -100.0:
-                reward = -10.0
+                reward = -10.0 # bipedal walker does -100 for hitting floor, so -10 might make it more stable
             else:
-                reward *= 2
+                reward *= 2 # TODO why might this be justified? (encouraging forward motion?)
             replay_buffer.add(state, action, next_state, reward, done)
 
         else:
             if t == sequence_length:
                 for row in input_buffer.cpu().numpy():
                     replay_buffer.add(row[:24], row[24:28], row[28:52], row[52], row[53])
-                    # TODO - why does this ^ use slices? Where do these numbers come from?
+                    # ^ magin numbers are from state_dim, state_dim + action_dim, state_dim + action_dim + reward_dim, done
             elif t > sequence_length:
                 replay_buffer.add(state, action, next_state, reward, done)
             # don't store if simulation ends without reaching the sequence length
@@ -330,6 +330,7 @@ class DreamerAgent(nn.Module):
 
         self.mse_loss = nn.MSELoss()
         self.ce_loss = nn.CrossEntropyLoss()
+        self.bce_loss = nn.BCEWithLogitsLoss()
         
         self.input_fc = nn.Linear(self.input_dim, hidden_dim).to(DEVICE)
         self.target_fc = nn.Linear(self.target_dim, hidden_dim).to(DEVICE)
@@ -351,7 +352,8 @@ class DreamerAgent(nn.Module):
         reward, done, next_state = torch.split(ground_truth, [1, 1, self.state_dim], dim=-1)
         loss = self.mse_loss(output_next_state[:, -1], next_state)
         loss += self.mse_loss(output_reward[:, -1], reward)
-        loss += self.ce_loss(output_done[:, -1], done)
+        # loss += self.ce_loss(output_done[:, -1], done)
+        loss += self.bce_loss(output_done[:, -1], done.float())
         return loss
 
     def forward(self, input_tensor):
@@ -751,14 +753,14 @@ seed = 42 # DONT CHANGE FOR COURSEWORK
 hyperparams = {
     # env/general params
     "max_timesteps": MAX_TIMESTEPS, # per episode [DONT CHANGE]
-    "max_episodes": 300,
+    "max_episodes": 200,
     "target_score": 300, # stop training when average score over 100 episodes is > target_score
     "hardcore": False,
 
     # Agent hyperparams (from https://github.com/ArijusLengvenis/bipedal-walker-dreamer/blob/main/dreamer_bipedal_walker_code.ipynb)
     "n_mini_critics": 5, # each mini-critic is a single mlp, which combine to make one mega-critic
     "n_quantiles": 25, # quantiles per mini critic
-    "top_quantiles_to_drop_per_net": 2, # per mini critic
+    "top_quantiles_to_drop_per_net": 'auto', # per mini critic (auto based on n_quantiles)
     "actor_hidden_dims": [512, 512],
     "mini_critic_hidden_dims": [256, 256], # * n_mini_critics
     "batch_size": 256,
@@ -768,10 +770,10 @@ hyperparams = {
     "critic_lr": 3e-4,
     "alpha_lr": 3e-4,
 
-    # ERE buffer
-    "buffer_size": int(0.5e6), # smaller size improves learning early on but is outperformed later on
-    "eta0": 0.996, # 0.996 - 0.999 is good (according to paper)
-    "annealing_steps": int(2e5), # number of steps to anneal eta over (after which sampling is uniform)
+    # ERE buffer (see paper for their choices)
+    "buffer_size": 500000, # smaller size improves learning early on but is outperformed later on
+    "eta0": 0.994, # 0.994 - 0.999 is good (according to paper)
+    "annealing_steps": 'auto', # number of steps to anneal eta over (after which sampling is uniform) - None = auto-set to max estimated steps in training
     "cmin": 5000, # min number of samples to sample from
 
     # dreamer hyperparams (from https://github.com/ArijusLengvenis/bipedal-walker-dreamer/blob/main/dreamer_bipedal_walker_code.ipynb)
@@ -787,7 +789,8 @@ hyperparams = {
     "step_size": 1,                  # how many timesteps to skip between each context window
     "train_split": 0.8,              # train/validation split
     "score_threshold": 0.8,          # use dreamer if loss < score_threshold
-    "imagination_horizon": 80,       # how many timesteps to run the dreamer model for (H in Dreamer paper) - chosen empirically
+    "auto_horizon": False,           # True: sets imagination_horizon to min (imagination_horizon, last episode length)
+    "imagination_horizon": 80,       # how many timesteps to run the dreamer model for (H in Dreamer paper) - need to empirically test for best
     "dreamer_train_epochs": 15,      # how many epochs to train the dreamer model for
     "dreamer_train_frequency": 10,   # how often to train the dreamer model
     "episode_threshold": 50,         # how many episodes to run before training the dreamer model
@@ -804,6 +807,10 @@ ep_start_rec = 100 # start recording on this episode
 save_model = False # NOTE - currently only saves actor & no way to load models
 save_interval = 30 # save every Nth episode
 
+if hyperparams['annealing_steps'] == 'auto':
+    hyperparams['annealing_steps'] = hyperparams['max_episodes']*hyperparams['max_timesteps'] # max est number of steps in training
+if hyperparams['top_quantiles_to_drop_per_net'] == 'auto':
+    hyperparams['top_quantiles_to_drop_per_net'] = int(hyperparams['n_quantiles'] // 12.5) # keep ratio same as M=25 d=2
 
 # %%
 ## SETUP
@@ -811,7 +818,7 @@ save_interval = 30 # save every Nth episode
 # init wandb run
 import datetime
 suffix = '_hardcore' if hyperparams['hardcore'] else ''
-run_name = SOURCE + f"_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}" + suffix
+run_name = SOURCE_ID + f"_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}" + suffix
 wandb.init(
     project="RL-Coursework-Walker2d",
     config=hyperparams,
@@ -945,9 +952,13 @@ while episode <= config.max_episodes: # index from 1
                 dreamer.dones = input_buffer[:-1, -1-state_dim].unsqueeze(1)
 
                 # sample from dreamer environment (ignore input buffer and info)
+                if config.auto_horizon:
+                    imagination_horizon = min(config.imagination_horizon, ep_timesteps)
+                else:
+                    imagination_horizon = config.imagination_horizon
                 _td, _rd, _, _ = train_on_environment(
                     actor, dreamer, grad_step_class, replay_buffer,
-                    config.imagination_horizon, # number of timesteps to run the dreamer for
+                    imagination_horizon, # number of timesteps to run the dreamer for
                     dreamer.states[-1].cpu().numpy(), # use last state from dreamer TODO why?
                     config.batch_size, total_steps, config.window_size)
 
@@ -967,13 +978,17 @@ while episode <= config.max_episodes: # index from 1
         "Episode Reward": ep_reward,
         "Episode Timesteps": ep_timesteps,
     }
+
     # log tracked statistics
-    if 'recorder' in info and info['recorder']['idx']:
-        latest_idx = info['recorder']['idx'] # Only log if the current episode matches the latest tracker index (info might be empty)
-        if latest_idx == episode:
-            log_dict["TrackedInfo/r_mean_"] = info['recorder']['r_mean_']
-            log_dict["TrackedInfo/r_std_"] = info['recorder']['r_std_']
-            log_dict["TrackedInfo/r_sum"] = info['recorder']['r_sum']
+    if 'recorder' in info: # if we have info available
+        log_dict["TrackedInfo/r_mean_"] = info['recorder']['r_mean_']
+        log_dict["TrackedInfo/r_std_"] = info['recorder']['r_std_']
+        log_dict["TrackedInfo/r_sum"] = info['recorder']['r_sum']
+
+        if info['recorder']['r_mean_'] >= config.target_score: # update success_ep
+            success_ep = min(success_ep, episode)
+            log_dict["Episodes to Reach Target"] = success_ep
+            print(f'target score reached at episode {success_ep}!')
 
     if config.use_dreamer:
         log_dict["Dreamer Average Loss"] = dreamer_avg_loss if 'dreamer_avg_loss' in locals() else None # Only log if calculated
@@ -981,13 +996,6 @@ while episode <= config.max_episodes: # index from 1
         if dreamer_eps > 0:
             log_dict["Dreamer Average Reward"] = ep_reward_dreamer / dreamer_eps
             log_dict["Dreamer Average Timesteps"] = ep_timesteps_dreamer / dreamer_eps
-
-    # update success_ep
-    if 'recorder' in info:
-        if info['recorder']['r_mean_'] >= config.target_score:
-            success_ep = min(success_ep, episode)
-            log_dict["Episodes to Reach Target"] = success_ep
-            print(f'target score reached at episode {success_ep}!')
 
     wandb.log(log_dict, step=episode) # log metrics each ep
 
