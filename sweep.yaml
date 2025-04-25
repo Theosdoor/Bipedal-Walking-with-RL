@@ -11,7 +11,7 @@ parameters:
   # n_quantiles:
   #   values: [10, 15, 25, 35, 50] # (n_to_drop automatic)
   # discount: # Gamma
-  #   values: [0.98, 0.99, 0.995]
+  #   values: [0.98, 0.99]
   # tau:
   #   values: [0.001, 0.005, 0.01]
   # actor_lr:
@@ -28,6 +28,8 @@ parameters:
   #   distribution: uniform
   
   ## ERE BUFFER ##
+  buffer_size:
+    values: [500000, 1000000]
   eta0:
     values: [0.994, 0.996, 0.997, 0.998, 0.999]
   annealing_steps:
@@ -40,6 +42,8 @@ parameters:
   #   distribution: int_uniform
   
   ## DREAMER PARAMETERS ##
+  # use_dreamer: # if false make sure to comment out the dreamer parameters!
+  #   values: [True, False]
   # hidden_dim:
   #   values: [128, 256, 512]
   # num_layers:
