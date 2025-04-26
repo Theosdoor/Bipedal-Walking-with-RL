@@ -2,8 +2,8 @@
 program: nchw73-agent-code.py # The script the agent will run
 method: bayes # Or 'random' or 'grid'
 metric:
-  name: Episodes to Reach Target # Metric to optimize (must match wandb.log key)
-  goal: minimize # maximize, minimize
+  name: TrackedInfo/r_mean_ # Metric to optimize (must match wandb.log key)
+  goal: maximize # maximize, minimize
 parameters:
   # AGENT PARAMETERS (see TQC paper experiments)
   # n_mini_critics:
@@ -29,13 +29,11 @@ parameters:
   
   ## ERE BUFFER ##
   buffer_size:
-    values: [500000, 1000000]
+    values: [100000, 200000, 500000, 1000000]
   eta0:
     values: [0.994, 0.996, 0.997, 0.998, 0.999]
   annealing_steps:
-    max: 400000 # 200 ep
-    min: 100000
-    distribution: int_uniform
+    values: [100000, 200000, 250000, 300000, 350000, 400000] # 200 ep = max. 400k steps
   # cmin:
   #   max: 10000
   #   min: 2500
@@ -63,9 +61,7 @@ parameters:
   #   min: 0.05
   #   distribution: uniform
   # step_size:
-  #   max: 2
-  #   min: 1
-  #   distribution: int_uniform
+  #   values: [1, 2]
   # dreamer_train_frequency:
   #   max: 20
   #   min: 5
@@ -76,12 +72,12 @@ parameters:
   #   distribution: int_uniform
   imagination_horizon:
     max: 100
-    min: 20
+    min: 10
     distribution: int_uniform
-  # score_threshold:
-  #   values: [0.7, 0.8, 0.9]
-  # episode_threshold:
-  #   values: [20, 30, 50]
+  score_threshold:
+    values: [0.7, 0.8, 0.9]
+  episode_threshold:
+    values: [20, 30, 50]
     
     
 
