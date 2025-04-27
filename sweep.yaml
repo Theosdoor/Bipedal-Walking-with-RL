@@ -29,11 +29,12 @@ parameters:
   
   ## ERE BUFFER ##
   buffer_size:
-    values: [100000, 200000, 500000, 1000000]
+    # values: [100000, 200000, 500000, 1000000] # tested in paper
+    values: [500000, 1000000]
   eta0:
-    values: [0.994, 0.996, 0.997, 0.998, 0.999]
-  annealing_steps:
-    values: [100000, 200000, 250000, 300000, 350000, 400000] # 200 ep = max. 400k steps
+    values: [0.994, 0.995, 0.996, 0.997, 0.998, 0.999]
+  # annealing_steps:
+  #   values: [100000, 200000, 250000, 300000, 350000, 400000] # 200 ep = max. 400k steps
   # cmin:
   #   max: 10000
   #   min: 2500
@@ -71,20 +72,20 @@ parameters:
   #   min: 5
   #   distribution: int_uniform
   imagination_horizon:
-    max: 100
+    max: 50 # as a starting point
     min: 10
     distribution: int_uniform
-  score_threshold:
-    values: [0.7, 0.8, 0.9]
-  episode_threshold:
-    values: [20, 30, 50]
+  # score_threshold:
+  #   values: [0.7, 0.8, 0.9]
+  # episode_threshold:
+  #   values: [20, 30, 50]
     
     
 
 # --- Optional: Early Termination ---
 early_terminate:
   type: hyperband
-  min_iter: 100 # Require at least 50 episodes before stopping
+  min_iter: 100
   # s: 2 # Number of brackets (optional)
   # eta: 3 # Halving rate (optional)
 

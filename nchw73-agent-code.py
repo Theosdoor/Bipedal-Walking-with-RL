@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# FOR .py FILE!
+
 # %% [markdown]
 # # **Dependencies and imports**
 # 
@@ -755,9 +757,10 @@ seed = 42 # DONT CHANGE FOR COURSEWORK
 hyperparams = {
     # env/general params
     "max_timesteps": MAX_TIMESTEPS, # per episode [DONT CHANGE]
-    "max_episodes": 150,
-    "target_score": 300, # stop training when average score over 100 episodes is > target_score
-    "hardcore": False,
+    "max_episodes": 1000,
+    "target_score": 300, # stop training when average score over r_list > target_score
+    "len_r_list": 100, # length of reward list to average over for target score
+    "hardcore": True,
 
     # Agent hyperparams (from https://github.com/ArijusLengvenis/bipedal-walker-dreamer/blob/main/dreamer_bipedal_walker_code.ipynb)
     "n_mini_critics": 5, # each mini-critic is a single mlp, which combine to make one mega-critic
@@ -800,12 +803,12 @@ hyperparams = {
 }
 
 # recording/logging
-plot_interval = 10 # plot every Nth episode
+plot_interval = 25 # plot every Nth episode (wandb still plots every ep)
 save_fig = True # save figures too
 
 is_recording = True
-video_interval = 20 # record every Nth episode
-ep_start_rec = 50 # start recording on this episode
+video_interval = 25 # record every Nth episode
+ep_start_rec = 300 # start recording on this episode
 
 save_model = False # NOTE - currently only saves actor & no way to load models
 save_interval = 30 # save every Nth episode
@@ -835,12 +838,14 @@ config = wandb.config # use wandb.config to access hyperparameters
 env = rld.make("rldurham/Walker", render_mode="rgb_array", hardcore=config.hardcore)
 
 # get statistics, logs, and videos
+video_prefix = "nchw73-agent-hardcore-video" if config.hardcore else "nchw73-agent-video"
+video_prefix = f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_" + video_prefix # mark video with date/time to be mateched to run (remove later!)
 env = rld.Recorder(
     env,
     smoothing=10,                       # track rolling averages (useful for plotting)
     video=True,                         # enable recording videos
     video_folder="videos",              # folder for videos
-    video_prefix="nchw73-agent-hardcore-video" if config.hardcore else "nchw73-agent-video",  # prefix for videos
+    video_prefix=video_prefix,          # prefix for videos
     logs=True,                          # keep logs
 )
 
@@ -893,8 +898,7 @@ total_steps = 0
 ep_reward = 0
 memory_ptr = 0 # marks boundary between new and old data in the replay buffer
 train_set, test_set = None, None
-reward_list = []
-reward_avg_list = []
+recent_rewards= []
 ep_timesteps_dreamer = ep_reward_dreamer = dreamer_eps = 0
 
 episode = 1
@@ -1001,8 +1005,7 @@ while episode <= config.max_episodes: # index from 1
 
     wandb.log(log_dict, step=episode) # log metrics each ep
 
-    reward_list.append(ep_reward)
-    reward_avg_list.append(ep_reward)
+    recent_rewards.append(ep_reward)
 
     # plot tracked statistics (on real env)
     if episode % plot_interval == 0:
@@ -1028,13 +1031,13 @@ while episode <= config.max_episodes: # index from 1
     ep_reward = 0
 
     # break condition - stop if we consistently meet target score
-    if len(reward_avg_list) >= 100 or success_ep < config.max_episodes:
-        current_avg = np.array(reward_avg_list).mean()
+    if len(recent_rewards) >= config.len_r_list or success_ep < config.max_episodes:
+        current_avg = np.array(recent_rewards).mean()
         print(f'Current progress: {current_avg:.3f} / {config.target_score}')
         if current_avg >= config.target_score or success_ep < config.max_episodes: # quit when we've got good enough performance
             print('Completed environment!')
             break
-        reward_avg_list = reward_avg_list[-99:] # discard oldest on list (keep most recent 99)
+        recent_rewards = recent_rewards[-config.len_r_list+1:] # discard oldest on list (keep most recent 99)
 
 # don't forget to close environment (e.g. triggers last video save)
 env.close()
