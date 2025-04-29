@@ -85,7 +85,7 @@ parameters:
 # --- Optional: Early Termination ---
 early_terminate:
   type: hyperband
-  min_iter: 100
+  min_iter: 800
   # s: 2 # Number of brackets (optional)
   # eta: 3 # Halving rate (optional)
 

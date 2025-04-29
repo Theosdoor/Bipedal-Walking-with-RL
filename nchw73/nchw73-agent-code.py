@@ -51,7 +51,12 @@ wandb.login()
 MAX_TIMESTEPS = 2000 # [DONT CHANGE]
 SOURCE_ID = 'mac' # mac, ncc, colab -> for personal id in wandb
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    DEVICE = torch.device("mps")
+else:
+    DEVICE = torch.device("cpu")
 DEVICE
 
 # %% [markdown]
@@ -71,8 +76,16 @@ def train_on_environment(actor, env, grad_step_class, replay_buffer, max_timeste
     '''
     ep_timesteps = 0
     ep_reward = 0
-    # save start sequence for the dreamer model TODO - where does 54 come from?
-    input_buffer = torch.empty((0, 54)).to(DEVICE)
+
+    state_dim = actor.state_dim
+    act_dim = actor.action_dim
+    input_dim = state_dim + act_dim + state_dim + 1 + 1 # state, action, next_state, reward, done
+    
+    # save start sequence for the dreamer model
+    input_buffer = torch.empty((0, input_dim), dtype=torch.float32).to(DEVICE)
+
+    # initial state float32 for mps
+    state = state.astype(np.float32)
 
     for t in range(max_timesteps): 
         total_steps += 1
@@ -87,10 +100,15 @@ def train_on_environment(actor, env, grad_step_class, replay_buffer, max_timeste
         else:
             next_state, reward, done, info = step
 
+        # float32 before processing/storing
+        next_state = next_state.astype(np.float32)
+        reward = float(reward)
+        done = float(done) # keep done as float for consistency
+
         ep_timesteps += 1
         ep_reward += reward
 
-        if max_timesteps == MAX_TIMESTEPS: # could we be in dreamer for this?
+        if max_timesteps == MAX_TIMESTEPS: # TODO could we be in dreamer for this?
             # reward shaping
             if reward == -100.0:
                 reward = -10.0 # bipedal walker does -100 for hitting floor, so -10 might make it more stable
@@ -101,14 +119,29 @@ def train_on_environment(actor, env, grad_step_class, replay_buffer, max_timeste
         else:
             if t == sequence_length:
                 for row in input_buffer.cpu().numpy():
-                    replay_buffer.add(row[:24], row[24:28], row[28:52], row[52], row[53])
-                    # ^ magin numbers are from state_dim, state_dim + action_dim, state_dim + action_dim + reward_dim, done
+                    replay_buffer.add(
+                        row[:state_dim], # state row[:24]
+                        row[state_dim:state_dim+act_dim], # action row[24:28]
+                        row[state_dim+act_dim:state_dim+act_dim+state_dim], # next_state row[28:52]
+                        row[-2], # reward row[52]
+                        row[-1] # done row[53]
+                    )
+                # add the last step to the buffer
+                replay_buffer.add(state, action, next_state, reward, done)
             elif t > sequence_length:
+                # add last step directly
                 replay_buffer.add(state, action, next_state, reward, done)
             # don't store if simulation ends without reaching the sequence length
         
-        if t < sequence_length: # store in input buffer TODO what does this do? why's it needed?
-            combined = torch.tensor(np.concatenate((state, action, next_state, np.array([reward]), np.array([done])), axis=0)).unsqueeze(0).to(DEVICE)
+        if t < sequence_length: # store in input buffer for dreamer start seq
+            combined_np = np.concatenate((
+                state, 
+                action.astype(np.float32), 
+                next_state, 
+                np.array([reward], dtype=np.float32), 
+                np.array([done], dtype=np.float32)
+            ), axis=0)
+            combined = torch.tensor(combined_np, dtype=torch.float32).unsqueeze(0).to(DEVICE)
             input_buffer = torch.cat([input_buffer, combined], axis=0)
     
         state = next_state
@@ -121,30 +154,30 @@ def train_on_environment(actor, env, grad_step_class, replay_buffer, max_timeste
             break
 
     if sequence_length > 0: # TODO - this means...? 
-        return ep_timesteps, ep_reward, input_buffer, info
+        return ep_timesteps, ep_reward, input_buffer.to(torch.float32), info
     return ep_timesteps, ep_reward, None, info
 
 
 # test loop for agent on environment
-def simulate_on_environment(actor, env, max_timesteps, state):
-    ep_timesteps = 0
-    ep_reward = 0
-    for t in range(max_timesteps):
-        action = actor.select_action(state)
-        step = env.step(action)
-        if len(step) == 5:
-            next_state, reward, term, tr, _ = step
-            done = term or tr
-        else:
-            next_state, reward, done, _ = step
-        ep_timesteps += 1
+# def simulate_on_environment(actor, env, max_timesteps, state):
+#     ep_timesteps = 0
+#     ep_reward = 0
+#     for t in range(max_timesteps):
+#         action = actor.select_action(state)
+#         step = env.step(action)
+#         if len(step) == 5:
+#             next_state, reward, term, tr, _ = step
+#             done = term or tr
+#         else:
+#             next_state, reward, done, _ = step
+#         ep_timesteps += 1
     
-        state = next_state
-        ep_reward += reward
+#         state = next_state
+#         ep_reward += reward
     
-        if done or t == max_timesteps - 1:
-            break
-    return ep_timesteps, ep_reward
+#         if done or t == max_timesteps - 1:
+#             break
+#     return ep_timesteps, ep_reward
 
 
 # %%
@@ -252,11 +285,11 @@ class EREReplayBuffer(object):
         self.index = []
         self.T = T
 
-        self.reward = np.empty((max_size, 1))
-        self.state = np.empty((max_size, state_dim))
-        self.action = np.empty((max_size, action_dim))
-        self.not_done = np.empty((max_size, 1))
-        self.next_state = np.empty((max_size, state_dim))
+        self.reward = np.empty((max_size, 1), dtype=np.float32) # float32 for mps
+        self.state = np.empty((max_size, state_dim), dtype=np.float32)
+        self.action = np.empty((max_size, action_dim), dtype=np.float32)
+        self.not_done = np.empty((max_size, 1), dtype=np.float32)
+        self.next_state = np.empty((max_size, state_dim), dtype=np.float32)
         
     def sample(self, batch_size, t):
         # update eta value for current timestep
@@ -264,11 +297,11 @@ class EREReplayBuffer(object):
 
         index = np.array([self._get_index(eta, k, batch_size) for k in range(batch_size)])
 
-        r = torch.tensor(self.reward[index], dtype = torch.float).to(DEVICE)
-        s = torch.tensor(self.state[index], dtype = torch.float).to(DEVICE)
-        ns = torch.tensor(self.next_state[index], dtype = torch.float).to(DEVICE)
-        a = torch.tensor(self.action[index], dtype = torch.float).to(DEVICE)
-        nd = torch.tensor(self.not_done[index], dtype = torch.float).to(DEVICE)
+        r = torch.tensor(self.reward[index], dtype=torch.float32).to(DEVICE)
+        s = torch.tensor(self.state[index], dtype=torch.float32).to(DEVICE)
+        ns = torch.tensor(self.next_state[index], dtype=torch.float32).to(DEVICE)
+        a = torch.tensor(self.action[index], dtype=torch.float32).to(DEVICE)
+        nd = torch.tensor(self.not_done[index], dtype=torch.float32).to(DEVICE)
         
         return s, a, ns, r, nd
     
@@ -287,11 +320,11 @@ class EREReplayBuffer(object):
  
     def add(self, state, action, next_state, reward, done):
         # Add experience to replay buffer 
-        self.state[self.ptr] = state
-        self.action[self.ptr] = action
-        self.next_state[self.ptr] = next_state
-        self.reward[self.ptr] = reward
-        self.not_done[self.ptr] = 1. - done
+        self.state[self.ptr] = state.astype(np.float32)
+        self.action[self.ptr] = action.astype(np.float32)
+        self.next_state[self.ptr] = next_state.astype(np.float32)
+        self.reward[self.ptr] = float(reward)
+        self.not_done[self.ptr] = 1. - float(done)
 
         self.ptr += 1
         self.ptr %= self.max_size
@@ -434,22 +467,28 @@ class DreamerAgent(nn.Module):
         return running_loss / len(test_dataloader)
     
     def step(self, action):
-        self.actions = torch.cat([self.actions, torch.tensor(np.array([action])).to(DEVICE)], axis=0)
+        act = torch.tensor(np.array([action]), dtype=torch.float32).to(DEVICE)
+        self.actions = torch.cat([self.actions, act], axis=0)
+
         input_sequence = torch.cat([self.states[:-1], self.actions[:-1], self.rewards, self.dones], axis=1).to(torch.float32)
         target = torch.cat([self.states[-1], self.actions[-1]], axis=0).unsqueeze(0).to(torch.float32)
+        
         with torch.no_grad():
             next_state, reward, done = self.predict(input_sequence, target)
-            done = (done >= 0.6).float() # bias towards not done to avoid false positives
+            next_state = next_state.to(torch.float32)
+            reward = reward.to(torch.float32)
+            done = (done >= 0.6).to(torch.float32) # bias towards not done to avoid false positives
 
             self.states = torch.cat([self.states, next_state], axis=0)
             self.rewards = torch.cat([self.rewards, reward], axis=0)
             self.dones = torch.cat([self.dones, done], axis=0)
             
+            # trim sequences
             if self.states.shape[0] > self.seq_len:
                 self.states = self.states[1:]
                 self.rewards = self.rewards[1:]
                 self.dones = self.dones[1:]
-            if self.actions.shape[0] > self.seq_len - 1:
+            if self.actions.shape[0] > self.seq_len - 1: # action seq shorter
                 self.actions = self.actions[1:]
         
         return next_state.squeeze(0).cpu().numpy(), reward.cpu().item(), done.cpu().item(), None
@@ -672,6 +711,8 @@ class GradientStep(object):
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, hidden_dims=[512, 512]):
         super().__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
         self.mlp = ActorMLP(state_dim, hidden_dims, action_dim)
 
     def forward(self, obs):
@@ -703,9 +744,11 @@ class Actor(nn.Module):
         return action, log_prob
 
     def select_action(self, obs):
-        obs = torch.FloatTensor(obs).to(DEVICE)[np.newaxis, :]
-        action, log_prob = self.forward(obs)
-        return np.array(action[0].cpu().detach())
+        obs = torch.tensor(obs, dtype=torch.float32).to(DEVICE)
+        if obs.ndim == 1: # add batch dim if missing
+             obs = obs.unsqueeze(0)
+        act, _ = self.forward(obs)
+        return np.array(act[0].cpu().detach())
 
 
 class Critic(nn.Module): # really a mega-critic from lots of mini-critics
@@ -824,7 +867,8 @@ if hyperparams['top_quantiles_to_drop_per_net'] == 'auto':
 # init wandb run
 import datetime
 suffix = '_hardcore' if hyperparams['hardcore'] else ''
-run_name = SOURCE_ID + f"_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}" + suffix
+timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+run_name = SOURCE_ID + f"_{timestamp}" + suffix
 wandb.init(
     project="RL-Coursework-Walker2d",
     config=hyperparams,
@@ -839,7 +883,7 @@ env = rld.make("rldurham/Walker", render_mode="rgb_array", hardcore=config.hardc
 
 # get statistics, logs, and videos
 video_prefix = "nchw73-agent-hardcore-video" if config.hardcore else "nchw73-agent-video"
-video_prefix = f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_" + video_prefix # mark video with date/time to be mateched to run (remove later!)
+video_prefix = f"{timestamp}_" + video_prefix # mark video with date/time to be mateched to run (remove later!)
 env = rld.Recorder(
     env,
     smoothing=10,                       # track rolling averages (useful for plotting)
@@ -858,7 +902,7 @@ discrete_act, discrete_obs, act_dim, state_dim = rld.env_info(env, print_out=Tru
 
 # render start image
 env.reset(seed=seed)
-rld.render(env)
+# rld.render(env)
 
 # %% [markdown]
 # **Training**
@@ -915,6 +959,7 @@ while episode <= config.max_episodes: # index from 1
 
     # reset for new episode
     state, info = env.reset()
+    state.astype(np.float32) # float32 for mps
 
     # sample real env
     ep_timesteps, ep_reward, input_buffer, info = train_on_environment(
@@ -1016,7 +1061,7 @@ while episode <= config.max_episodes: # index from 1
             # fig.savefig(f'./tracker_{run_name}.png', bbox_inches = 'tight')
             plt.close(fig) # Close the figure to free memory
         # show by default
-        tracker.plot(r_mean_=True, r_std_=True, r_sum=dict(linestyle=':', marker='x'))
+        # tracker.plot(r_mean_=True, r_std_=True, r_sum=dict(linestyle=':', marker='x'))
 
     # save model
     if save_model and episode % save_interval == 0:

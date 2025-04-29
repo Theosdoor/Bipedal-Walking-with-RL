@@ -1,0 +1,8 @@
+wandb_version: 1
+
+buffer_size:
+  value: 1000000
+eta0:
+  value: 0.995
+imagination_horizon:
+  value: 38
