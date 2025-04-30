@@ -1,17 +1,26 @@
 # read https://docs.wandb.ai/guides/sweeps/sweep-config-keys/#distribution-options-for-random-and-bayesian-search
 program: nchw73-agent-code.py # The script the agent will run
-method: bayes # Or 'random' or 'grid'
+method: bayes # bayes, random or grid
 metric:
   name: TrackedInfo/r_mean_ # Metric to optimize (must match wandb.log key)
   goal: maximize # maximize, minimize
+
+early_terminate: # --- Optional: Early Termination 
+  type: hyperband
+  min_iter: 810
+  # s: 2 # Number of brackets (optional)
+  # eta: 3 # Halving rate (optional)
+
 parameters:
+  hardcore:
+    value: True
   # AGENT PARAMETERS (see TQC paper experiments)
   # n_mini_critics:
   #   values: [1, 2, 3, 5, 10]
   # n_quantiles:
   #   values: [10, 15, 25, 35, 50] # (n_to_drop automatic)
-  # discount: # Gamma
-  #   values: [0.98, 0.99]
+  discount: # Gamma
+    values: [0.98, 0.99]
   # tau:
   #   values: [0.001, 0.005, 0.01]
   # actor_lr:
@@ -30,9 +39,11 @@ parameters:
   ## ERE BUFFER ##
   buffer_size:
     # values: [100000, 200000, 500000, 1000000] # tested in paper
-    values: [500000, 1000000]
+    # values: [500000, 1000000]
+    value: 500000
   eta0:
-    values: [0.994, 0.995, 0.996, 0.997, 0.998, 0.999]
+    # values: [0.994, 0.995, 0.996, 0.997, 0.998, 0.999]
+    value: 0.998
   # annealing_steps:
   #   values: [100000, 200000, 250000, 300000, 350000, 400000] # 200 ep = max. 400k steps
   # cmin:
@@ -41,8 +52,10 @@ parameters:
   #   distribution: int_uniform
   
   ## DREAMER PARAMETERS ##
-  # use_dreamer: # if false make sure to comment out the dreamer parameters!
-  #   values: [True, False]
+  use_dreamer: # if false make sure to comment out the dreamer parameters!
+    values: [True, False]
+  # intrinsic_reward_scale:
+  #   values: [0, 0.01, 0.1]
   # hidden_dim:
   #   values: [128, 256, 512]
   # num_layers:
@@ -72,22 +85,15 @@ parameters:
   #   min: 5
   #   distribution: int_uniform
   imagination_horizon:
-    max: 50 # as a starting point
-    min: 10
-    distribution: int_uniform
+    value: 15
+  #   max: 50 # as a starting point
+  #   min: 10
+  #   distribution: int_uniform
   # score_threshold:
   #   values: [0.7, 0.8, 0.9]
   # episode_threshold:
   #   values: [20, 30, 50]
-    
-    
 
-# --- Optional: Early Termination ---
-early_terminate:
-  type: hyperband
-  min_iter: 800
-  # s: 2 # Number of brackets (optional)
-  # eta: 3 # Halving rate (optional)
 
 command:
   - ${env}        # Passes environment variables
