@@ -17,12 +17,12 @@ parameters:
   # AGENT PARAMETERS (see TQC paper experiments)
   # n_mini_critics:
   #   values: [1, 2, 3, 5, 10]
-  # n_quantiles:
-  #   values: [10, 15, 25, 35, 50] # (n_to_drop automatic)
+  n_quantiles:
+    values: [10, 15, 25, 35, 50] # (n_to_drop automatic)
   discount: # Gamma
     values: [0.98, 0.99]
-  # tau:
-  #   values: [0.001, 0.005, 0.01]
+  tau:
+    values: [0.001, 0.005, 0.01]
   # actor_lr:
   #   max: 0.0006
   #   min: 0.00015
@@ -38,12 +38,10 @@ parameters:
   
   ## ERE BUFFER ##
   buffer_size:
-    # values: [100000, 200000, 500000, 1000000] # tested in paper
+    values: [100000, 200000, 500000, 1000000] # tested in paper
     # values: [500000, 1000000]
-    value: 500000
   eta0:
-    # values: [0.994, 0.995, 0.996, 0.997, 0.998, 0.999]
-    value: 0.998
+    values: [0.994, 0.995, 0.996, 0.997, 0.998, 0.999]
   # annealing_steps:
   #   values: [100000, 200000, 250000, 300000, 350000, 400000] # 200 ep = max. 400k steps
   # cmin:
@@ -53,7 +51,7 @@ parameters:
   
   ## DREAMER PARAMETERS ##
   use_dreamer: # if false make sure to comment out the dreamer parameters!
-    values: [True, False]
+    value: False
   # intrinsic_reward_scale:
   #   values: [0, 0.01, 0.1]
   # hidden_dim:
@@ -84,8 +82,8 @@ parameters:
   #   max: 20
   #   min: 5
   #   distribution: int_uniform
-  imagination_horizon:
-    value: 15
+  # imagination_horizon:
+  #   value: 15
   #   max: 50 # as a starting point
   #   min: 10
   #   distribution: int_uniform
