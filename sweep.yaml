@@ -13,28 +13,36 @@ early_terminate: # --- Optional: Early Termination
 
 parameters:
   hardcore:
-    value: True
+    value: False
+  max_episodes:
+    value: 500
+    
   # AGENT PARAMETERS (see TQC paper experiments)
-  # n_mini_critics:
-  #   values: [1, 2, 3, 5, 10]
-  n_quantiles:
-    values: [10, 15, 25, 35, 50] # (n_to_drop automatic)
+  init_rand_steps:
+    values: [100, 1000, 10000]
+  batch_size:
+    values: [64, 100, 128, 256]
+  n_mini_critics:
+    values: [2, 3, 5, 10]
+  n_quantiles: # aka n_atoms
+    # values: [10, 15, 25, 35, 50] # (n_to_drop automatic)
+    values: [15, 20, 25, 30, 35]
   discount: # Gamma
     values: [0.98, 0.99]
   tau:
-    values: [0.001, 0.005, 0.01]
-  # actor_lr:
-  #   max: 0.0006
-  #   min: 0.00015
-  #   distribution: uniform
-  # critic_lr:
-  #   max: 0.0006
-  #   min: 0.00015
-  #   distribution: uniform
-  # alpha_lr:
-  #   max: 0.0006
-  #   min: 0.00015
-  #   distribution: uniform
+    values: [0.005, 0.01, 0.02]
+  actor_lr:
+    max: 0.0005
+    min: 0.00025
+    distribution: uniform
+  critic_lr:
+    max: 0.0005
+    min: 0.00025
+    distribution: uniform
+  alpha_lr:
+    max: 0.0005
+    min: 0.00025
+    distribution: uniform
   
   ## ERE BUFFER ##
   buffer_size:
