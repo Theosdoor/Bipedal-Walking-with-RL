@@ -15,9 +15,11 @@ parameters:
   hardcore:
     value: False
   max_episodes:
-    value: 349
+    value: 250
     
   # AGENT PARAMETERS (see TQC paper experiments)
+  use_d2rl:
+    values: [True, False]
   # init_rand_steps:
   #   values: [100, 1000, 10000]
   # batch_size:
@@ -60,37 +62,37 @@ parameters:
   ## DREAMER PARAMETERS ##
   use_dreamer: # if false make sure to comment out the dreamer parameters!
     # values: [True, False]
-    value: True
+    value: False
   # intrinsic_reward_scale:
   #   values: [0, 0.01, 0.1]
-  hidden_dim:
-    values: [128, 256, 512]
-  num_layers:
-    values: [4, 6, 8, 16]
-  num_heads:
-    values: [4, 8]
-  dreamer_lr:
-    max: 0.0005
-    min: 0.00025
-    distribution: log_uniform_values
-  window_size:
-    values: [30, 40, 50]
+  # hidden_dim:
+  #   values: [128, 256, 512]
+  # num_layers:
+  #   values: [4, 6, 8, 16]
+  # num_heads:
+  #   values: [4, 8]
+  # dreamer_lr:
+  #   max: 0.0005
+  #   min: 0.00025
+  #   distribution: log_uniform_values
+  # window_size:
+  #   values: [30, 40, 50]
   # dropout_prob:
   #   max: 0.2
   #   min: 0.05
   #   distribution: uniform
   # step_size:
   #   values: [1, 2]
-  dreamer_train_frequency:
-    values: [5, 10, 15]
+  # dreamer_train_frequency:
+  #   values: [5, 10, 15]
   # dreamer_train_epochs:
   #   max: 20
   #   min: 5
   #   distribution: int_uniform
-  imagination_horizon:
-    values: [10, 15, 20]
-  loss_threshold:
-    values: [0.8, 0.9]
+  # imagination_horizon:
+  #   values: [10, 15, 20]
+  # loss_threshold:
+  #   values: [0.8, 0.9]
   # episode_threshold:
   #   values: [20, 30, 50]
 
