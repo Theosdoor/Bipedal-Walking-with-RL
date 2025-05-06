@@ -18,8 +18,8 @@ parameters:
     value: 250
     
   # AGENT PARAMETERS (see TQC paper experiments)
-  use_d2rl:
-    values: [True, False]
+  # use_d2rl:
+  #   values: [True, False]
   # init_rand_steps:
   #   values: [100, 1000, 10000]
   # batch_size:
@@ -47,6 +47,8 @@ parameters:
   #   distribution: log_uniform_values
   
   ## ERE BUFFER ##
+  use_per:
+    values: [True, False]
   # buffer_size:
   #   values: [100000, 200000, 500000, 1000000] # tested in paper
     # values: [500000, 1000000]
@@ -58,6 +60,10 @@ parameters:
   #   max: 10000
   #   min: 2500
   #   distribution: int_uniform
+  "recency_scale":
+    max: 10
+    min: 1
+    distribution: int_uniform
   
   ## DREAMER PARAMETERS ##
   use_dreamer: # if false make sure to comment out the dreamer parameters!
