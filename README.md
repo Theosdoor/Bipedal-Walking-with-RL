@@ -3,7 +3,7 @@
 ## Overview
 Submitted as part of 3rd year MSci Natural Sciences to the Department of Computer Science at Durham University. It was assessed by module leader Dr Robert Lieck.
 
-- **Grade:** 1st Class (80%)
+- **Grade:** 1st Class
 - **Overall Scores:** 78% (Normal), 75% (Hardcore)
 - **Notable Rankings:** Top 10% of class for Hardcore environment performance
 
