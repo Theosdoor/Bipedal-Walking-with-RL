@@ -3,10 +3,9 @@
 ## Overview
 Submitted as part of 3rd year MSci Natural Sciences to the Department of Computer Science at Durham University. It was assessed by module leader Dr Robert Lieck.
 
-**Key Achievements:**
-- **Overall Score:** 78% (Normal), 75% (Hardcore)
 - **Grade:** 1st Class (80%)
-- **Ranking:** Top 10% of class for Hardcore environment performance
+- **Overall Scores:** 78% (Normal), 75% (Hardcore)
+- **Notable Rankings:** Top 10% of class for Hardcore environment performance
 
 ### Marking Feedback
 > "*Normal environment performance:* The normal agent has near perfect exploration in the early learning phase and it has an excellent highscore (best 90% quantile over 100 steps) with a value of 330.21. It has an outstanding median area under the overall learning curve. Overall, the normal agent has an excellent performance.
