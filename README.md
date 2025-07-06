@@ -1,4 +1,4 @@
-# Solving BipedalWalker with Truncated Quantile Critics (TQC) + D2RL + ERE+PER Buffer
+# Solving BipedalWalker with a TQC+D2RL agent and an ERE+PER Buffer
 
 ## Overview
 Submitted as part of 3rd year MSci Natural Sciences to the Department of Computer Science at Durham University. It was assessed by module leader Dr Robert Lieck.
