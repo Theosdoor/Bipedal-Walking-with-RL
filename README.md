@@ -36,7 +36,7 @@ This project investigates combining Truncated Quantile Critics (TQC) with D2RL a
 *The agent successfully navigating the hardcore environment with obstacles, achieving a score of 326 at episode 959.*
 
 ### Marking Feedback
-> "*Normal environment performance:* The normal agent has near perfect exploration in the early learning phase and it has an excellent highscore (best 90% quantile over 100 steps) with a value of 330.21. It has an outstanding median area under the overall learning curve. Overall, the normal agent has an excellent performance.
+> *Normal environment performance:* The normal agent has near perfect exploration in the early learning phase and it has an excellent highscore (best 90% quantile over 100 steps) with a value of 330.21. It has an outstanding median area under the overall learning curve. Overall, the normal agent has an excellent performance.
 
 > *Normal environment video:* The normal agent has learned an excellent policy with a score of 330.08 at episode 179. It has learned a very fast and efficient policy with just a little room left for perfection.
 
