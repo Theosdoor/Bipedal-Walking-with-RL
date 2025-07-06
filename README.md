@@ -7,6 +7,9 @@ Submitted as part of 3rd year MSci Natural Sciences to the Department of Compute
 - **Overall Scores:** 78% (Normal), 75% (Hardcore)
 - **Notable Rankings:** Top 10% of class for Hardcore environment performance
 
+> "This is an excellent report presenting a sophisticated TQCD2RL agent enhanced with a hybrid ERE+PER buffer and tuned via Bayesian optimisation. The theoretical grounding is solid throughout, with a detailed explanation of how the agent addresses overestimation bias and sample efficiency, and a good understanding of the practical trade-offs in using ERE and PER together. The experimental design is thoughtful, including both hyperparameter sweeps and ablation studies that support the effectiveness of the proposed approach. The PER ablation is well contextualised, though further exploration of the joint scheduling and tuning of ERE and PER could improve the scientific rigour. The reward shaping and practical considerations (e.g. reward clipping and buffer sizing) demonstrate a strong grasp of implementation subtleties. This shows clear mastery of the domain with some originality and independent thinking."
+— Dr. Robert Lieck, Durham University
+
 ## Abstract
 This project investigates combining Truncated Quantile Critics (TQC) with D2RL architecture and a mixed-strategy experience replay buffer of both Emphasising Recent Experiences (ERE) and Prioritised Experience Replay (PER). Through Bayesian hyperparameter optimization, the resulting agent successfuly solves both the standard and hardcore variants of the BipedalWalker environment.
 
@@ -40,9 +43,6 @@ This project investigates combining Truncated Quantile Critics (TQC) with D2RL a
 > *Hardcore environment performance:* The hardcore agent has outstanding exploration in the early learning phase and it has an outstanding highscore (best 90% quantile over 100 steps) with a value of 325.9. It has an excellent median area under the overall learning curve. Overall, the hardcore agent has an excellent performance.
 
 > *Hardcore environment video:* The hardcore agent has learned an outstanding policy with a score of 325.98 at episode 959, ranking in the top 10% of the class. It has learned a very fast and efficient policy that handles the obstacles very well and hast just a little room left for perfection.
-
-> *Sophistication and mastery of the domain:* This is an excellent report presenting a sophisticated TQCD2RL agent enhanced with a hybrid ERE+PER buffer and tuned via Bayesian optimisation. The theoretical grounding is solid throughout, with a detailed explanation of how the agent addresses overestimation bias and sample efficiency, and a good understanding of the practical trade-offs in using ERE and PER together. The experimental design is thoughtful, including both hyperparameter sweeps and ablation studies that support the effectiveness of the proposed approach. The PER ablation is well contextualised, though further exploration of the joint scheduling and tuning of ERE and PER could improve the scientific rigour. The reward shaping and practical considerations (e.g. reward clipping and buffer sizing) demonstrate a strong grasp of implementation subtleties. This shows clear mastery of the domain with some originality and independent thinking."
-— Dr. Robert Lieck, Durham University
 
 ## Technical Approach
 
