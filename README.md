@@ -1,4 +1,4 @@
-# Truncated Quantile Critic + D2RL - Bipedal Walker 
+# Solving BipedalWalker with Truncated Quantile Critics (TQC) + D2RL, with ERE+PER buffer
 Submitted as part of the degree of MSci Natural Sciences (3rd year) to the Board of Examiners in the Department of Computer Sciences, Durham University. 
 This summative assignment was assessed and marked by the professor of the module in question:
 
