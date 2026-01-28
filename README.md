@@ -1,5 +1,9 @@
 # Solving BipedalWalker with a TQC+D2RL agent and an ERE+PER Buffer
 
+![Hardcore Agent Demo](https://github.com/Theosdoor/Bipedal-Walker-with-TQC-and-ERE-PER/blob/main/hardcore_env/hardcore-video,episode=959,score=326.gif)
+
+*The agent successfully navigating the hardcore environment with obstacles, achieving a score of 326 at episode 959.*
+
 ## Overview
 Submitted as part of 3rd year MSci Natural Sciences to the Department of Computer Science at Durham University. It was assessed by module leader Dr Robert Lieck.
 
@@ -29,11 +33,6 @@ This project investigates combining Truncated Quantile Critics (TQC) with D2RL a
 | Robustness | - | 45% | 57%
 | Median | - | 83% | 70%
 | **Overall Score** | | **78%** | **75%**
-
-### Agent Video
-![Hardcore Agent Demo](https://github.com/Theosdoor/Bipedal-Walker-with-TQC-and-ERE-PER/blob/main/hardcore_env/hardcore-video,episode=959,score=326.gif)
-
-*The agent successfully navigating the hardcore environment with obstacles, achieving a score of 326 at episode 959.*
 
 ### Marking Feedback
 > *Normal environment performance:* The normal agent has near perfect exploration in the early learning phase and it has an excellent highscore (best 90% quantile over 100 steps) with a value of 330.21. It has an outstanding median area under the overall learning curve. Overall, the normal agent has an excellent performance.
