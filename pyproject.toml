@@ -1,0 +1,15 @@
+[project]
+name = "bipedal-walking-with-rl"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "ipykernel>=7.2.0",
+    "matplotlib>=3.10.8",
+    "nbformat>=5.10.4",
+    "numpy>=2.2.6",
+    "rldurham>=0.1.1",
+    "swig>=4.4.1",
+    "torch>=2.10.0",
+]
