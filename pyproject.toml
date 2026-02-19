@@ -19,4 +19,5 @@ dependencies = [
     "scipy>=1.15.3",
     "swig>=4.4.1",
     "torch>=2.10.0",
+    "torchvision>=0.25.0",
 ]
