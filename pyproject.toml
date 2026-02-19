@@ -8,7 +8,7 @@ dependencies = [
     "ipykernel>=7.2.0",
     "matplotlib>=3.10.8",
     "nbformat>=5.10.4",
-    "numpy>=2.2.6",
+    "numpy<2.0.0",
     "rldurham>=0.1.1",
     "swig>=4.4.1",
     "torch>=2.10.0",
