@@ -1,5 +1,7 @@
 # Solving BipedalWalker with a TQC+D2RL agent and an ERE+PER Buffer
 
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Theosdoor/Bipedal-Walking-with-RL/blob/main/agent.ipynb)
+
 ![Hardcore Agent Demo](https://github.com/Theosdoor/Bipedal-Walker-with-TQC-and-ERE-PER/blob/main/hardcore_env/hardcore-video,episode=959,score=326.gif)
 
 *The agent successfully navigating the hardcore environment with obstacles, achieving a score of 326 at episode 959.*
